@@ -164,8 +164,8 @@ def determine_metric(metric_type, cumulative, rolling, per100k, interval):
 
 
 def calculate_metrics(df, level, how, interval, metadata, rolling_period=14, scale=100000):
-    df = df.merge(metadata[['id', 'population', 'latitude', 'longitude']], left_on=level + '_id', right_on='id', how='inner').drop(
-        columns=['id'])
+    df = df.merge(metadata[['id', 'population', 'latitude', 'longitude']], left_on=level + '_id', right_on='id',
+                  how='inner').drop(columns=['id'])
 
     if how == 'geo':
         group = df.groupby([level, level + '_id', 'population', 'latitude', 'longitude']).agg(
@@ -395,7 +395,7 @@ def plot_timeseries(df, level, metric):
 
     # Draw text labels near the points, and highlight based on selection
     text = line.mark_text(align='left', dx=5, dy=-5).encode(
-        text=alt.condition(nearest, metric, alt.value(' '))
+        text=alt.condition(nearest, alt.Text(metric + ':Q', format=',.0f'), alt.value(' '))
     )
 
     # Draw a rule at the location of the selection
@@ -417,7 +417,7 @@ def plot_trend(df, metric, color, upisbad):
     col_cum = determine_metric(metric, True, rolling, False, interval)
     col_inc = determine_metric(metric, False, rolling, False, interval)
 
-    df = df[df[col_inc] > 0]
+    df = df[df[col_inc] >= 0]
 
     last_value_cum = int(df[col_cum].iloc[-1])
     first_value_cum = int(df[col_cum].iloc[0])
@@ -524,6 +524,56 @@ def plot_trend_stacked(df, title, metric1, metric2, upisbad):
     return chart
 
 
+def plot_progressbar(df):
+    case_ratio = round(df[determine_metric('Cases', True, False, True, interval)].iloc[-1] / 100000, 2)
+    vac_ratio = round(df[determine_metric('Full Vaccinations', True, False, True, interval)].iloc[-1] / 100000, 2)
+
+    if layout == 'Desktop':
+        title = alt.TitleParams(text='Population Infection & Vaccination Rates', anchor='start', align='left')
+    else:
+        title = ''
+
+    source = pd.DataFrame({'Total': ['Total', 'Total'],
+                           'Metric': ['Infection Rate', 'Vaccination Rate'],
+                           'Value': [case_ratio, vac_ratio]})
+
+    points = alt.Chart(source).mark_point(size=400).encode(
+        alt.X(
+            'Value:Q',
+            title="",
+            scale=alt.Scale(zero=True, domain=(0, 1)),
+            axis=alt.Axis(grid=False, format='%'),
+
+        ),
+        alt.Y(
+            'Total:N',
+            title="",
+            #sort='-x',
+            axis=None
+        ),
+        color=alt.Color('Metric:N', legend=None),
+        # row=alt.Row(
+        #     'site:N',
+        #     title="",
+        #     sort=alt.EncodingSortField(field='yield', op='sum', order='descending'),
+        # ),
+        opacity=alt.value(0),
+        tooltip=['Metric:N', alt.Tooltip('Value:Q', format='.0%')]
+    ).properties(
+        #height=alt.Step(20),
+        title=title
+    )
+
+    text = points.mark_text(align='center', fontSize=40).encode(
+        text=alt.Text('emoji:N'),
+        opacity=alt.value(1)
+    ).transform_calculate(
+        emoji="{'Infection Rate': '🦠', 'Vaccination Rate': '💉'}[datum.Metric]"
+    )
+
+    return (points + text).configure_view(stroke="transparent", height=100)
+
+
 def format_date(x):
     if interval_cd == 'D':
         return dt.strptime(str(x), '%Y-%m-%d %H:%M:%S').strftime('%-d-%b %y')
@@ -556,17 +606,20 @@ def mobile_view():
                                                'Partial Vaccinations', 'Full Vaccinations', False),
                             use_container_width=True)
 
-    with st.beta_expander('🌎️ Heatmap', expanded=True):
+    with st.beta_expander('🩺️ Cumulative Infection & Vaccination Rates', expanded=True):
+        st.altair_chart(plot_progressbar(timeseries_summary), use_container_width=True)
+
+    with st.beta_expander('🌎️ Heatmap - ' + metric, expanded=True):
         st.altair_chart(plot_choropleth(geodata, summary, level, per100k).configure_view(strokeWidth=0),
                         use_container_width=True)
         st.altair_chart(plot_bubblechart(summary, level, per100k).configure_view(strokeWidth=0),
                         use_container_width=True)
 
-    with st.beta_expander('〽️ Time Series', expanded=False):
+    with st.beta_expander('〽️ Time Series - ' + metric, expanded=False):
         st.altair_chart(plot_timeseries(timeseries, level, metric), use_container_width=True)
 
     with st.beta_expander('💾 Data', expanded=False):
-        st.dataframe(summary.iloc[:, 3:-1])
+        st.dataframe(summary.set_index(level).iloc[:, 3:-1])
         #st.dataframe(timeseries_summary)
 
 
@@ -575,7 +628,7 @@ def desktop_view():
         st.write(', '.join(sorted(countries)))
 
     with st.beta_expander('🧭 Trends - ' + interval, expanded=True):
-        t1, t2, t3, _ = st.beta_columns([1, 1, 1, 3])
+        t1, t2, t3, t4 = st.beta_columns([1, 1, 1, 2])
         with t1:
             st.altair_chart(plot_trend(timeseries_summary, 'Cases', '#faca2b', True),
                             use_container_width=True)
@@ -586,6 +639,8 @@ def desktop_view():
             st.altair_chart(plot_trend_stacked(timeseries_summary, 'Vaccinations',
                                                'Partial Vaccinations', 'Full Vaccinations', False),
                             use_container_width=True)
+        with t4:
+            st.altair_chart(plot_progressbar(timeseries_summary), use_container_width=True)
 
     col_l, col_r = st.beta_columns(2)
 
@@ -601,7 +656,8 @@ def desktop_view():
             st.altair_chart(plot_timeseries(timeseries, level, metric).configure_view(strokeWidth=0, height=400),
                             use_container_width=True)
         with st.beta_expander('💾 Data', expanded=True):
-            st.dataframe(summary.set_index(level).iloc[:, 3:-1], height=343)
+            #st.dataframe(summary.set_index(level).iloc[:, 3:-1], height=343)
+            st.dataframe(timeseries_summary)
 
 
 def banner(title, background='#F63366', img='data/covid_icon.png'):
@@ -632,6 +688,7 @@ df = load_data('data/covid_data.csv')
 metadata = load_metadata('data/metadata.csv')
 geodata = load_geodata(geo_url, geo_feature)
 disclaimer = '''About \n
+Global COVID-19 situation dashboard powered by Streamlit. Analyse and explore COVID-19 epidemiological and vaccine data. \n
 Epidemiological data taken from the COVID-19 Data Repository by the Center for Systems Science and Engineering (CSSE) 
 at Johns Hopkins University https://github.com/CSSEGISandData/COVID-19 \n
 Vaccination data taken from the JHU GovEx repository https://github.com/govex/COVID-19'''

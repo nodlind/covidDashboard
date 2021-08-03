@@ -1002,12 +1002,12 @@ US,"Carver County, MN",USB,United States,US-MN,Minnesota
 US,"Charleston County, SC",USB,United States,US-SC,South Carolina
 US,"Charlotte County, FL",USB,United States,US-FL,Florida
 US,"Chatham County, NC",USB,United States,US-NC,North Carolina
-US,"Cherokee County, GA",USB,United States,US-GA,Georgia
+US,"Cherokee County, GA",USB,United States,US-GA,"Georgia, US"
 US,Chicago,USB,United States,US-IL,Illinois
 US,"Chicago, IL",USB,United States,US-IL,Illinois
 US,"Clark County, NV",USB,United States,US-NV,Nevada
 US,"Clark County, WA",USB,United States,US-WA,Washington
-US,"Cobb County, GA",USB,United States,US-GA,Georgia
+US,"Cobb County, GA",USB,United States,US-GA,"Georgia, US"
 US,"Collin County, TX",USB,United States,US-TX,Texas
 US,Colorado,USB,United States,US-CO,Colorado
 US,Connecticut,USB,United States,US-CT,Connecticut
@@ -1027,7 +1027,7 @@ US,"Fairfax County, VA",USB,United States,US-VA,Virginia
 US,"Fairfield County, CT",USB,United States,US-CT,Connecticut
 US,"Fayette County, KY",USB,United States,US-KY,Kentucky
 US,Florida,USB,United States,US-FL,Florida
-US,"Floyd County, GA",USB,United States,US-GA,Georgia
+US,"Floyd County, GA",USB,United States,US-GA,"Georgia, US"
 US,"Fort Bend County, TX",USB,United States,US-TX,Texas
 US,"Fresno County, CA",USB,United States,US-CA,California
 US,"Fulton County, GA",USB,United States,US-GA,"Georgia, US"
@@ -1109,7 +1109,7 @@ US,"Pierce County, WA",USB,United States,US-WA,Washington
 US,"Pinal County, AZ",USB,United States,US-AZ,Arizona
 US,"Placer County, CA",USB,United States,US-CA,California
 US,"Plymouth County, MA",USB,United States,US-MA,Massachusetts
-US,"Polk County, GA",USB,United States,US-GA,Georgia
+US,"Polk County, GA",USB,United States,US-GA,"Georgia, US"
 US,"Portland, OR",USB,United States,US-OR,Oregon
 US,"Providence County, RI",USB,United States,US-RI,Rhode Island
 US,"Providence, RI",USB,United States,US-RI,Rhode Island
