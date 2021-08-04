@@ -366,16 +366,15 @@ def plot_timeseries(df, level, metric):
     df = df[df[metric] > 0]
 
     # Create a selection that chooses the nearest point & selects based on x-value
-    nearest = alt.selection(type='single', nearest=True, on='mouseover',
-                            fields=['Date'], empty='none')
-    #selection = alt.selection_multi(fields=[level], bind='legend')
+    nearest = alt.selection(type='single', nearest=True, on='mouseover', fields=['Date'], empty='none')
+    #highlight = alt.selection(type='single', nearest=True, on='mouseover', fields=[level], empty='none')
 
     # The basic line
     line = alt.Chart(df).mark_line(interpolate='monotone').encode(
         x=alt.X('Date:T', title='', axis=alt.Axis(grid=False)),
         y=alt.Y(metric, axis=alt.Axis(grid=False)),
         color=alt.Color(level, title=level),
-        #opacity=alt.condition(nearest, alt.value(1), alt.value(0.2))
+        #opacity=alt.condition(highlight, alt.value(1), alt.value(0.2))
     )
 
     # Transparent selectors across the chart. This is what tells us
