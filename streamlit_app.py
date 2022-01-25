@@ -9,7 +9,7 @@ import base64
 from pathlib import Path
 
 
-@st.cache(persist=True)
+@st.cache(persist=False)
 def load_data(filepath):
     df = pd.read_csv(filepath)
     df['Date'] = pd.to_datetime(df['Date'], infer_datetime_format=True)
@@ -20,7 +20,7 @@ def load_data(filepath):
     return df.reset_index()
 
 
-@st.cache(persist=True)
+@st.cache(persist=False)
 def load_geodata(url, feature):
     source = alt.topo_feature(url, feature)
 
