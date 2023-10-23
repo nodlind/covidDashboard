@@ -9,25 +9,25 @@ import base64
 from pathlib import Path
 
 
-@st.cache(persist=False)
+@st.cache_data
 def load_data(filepath):
     df = pd.read_csv(filepath)
     df['Date'] = pd.to_datetime(df['Date'], infer_datetime_format=True)
     df = df.set_index(['Country', 'Country_id', 'Region', 'Region_id', 'Date'])
     df[['Cases', 'Deaths',
-        'Partial Vaccinations', 'Full Vaccinations']] = df.groupby(level=[0, 1, 2, 3]).apply(lambda x: x.diff())
+        'Partial Vaccinations', 'Full Vaccinations']] = df.diff()
 
     return df.reset_index()
 
 
-@st.cache(persist=False)
+@st.cache_data
 def load_geodata(url, feature):
     source = alt.topo_feature(url, feature)
 
     return source
 
 
-@st.cache
+@st.cache_data
 def load_metadata(filepath):
     df = pd.read_csv(filepath)
 
@@ -268,7 +268,7 @@ def plot_choropleth(geo, df, level, per100k):
     # brush = alt.selection(type='interval', encodings=['x'], fields=['NAME'])
 
     choropleth = alt.Chart(source).mark_geoshape().encode(
-        color=alt.Color(focus + ':Q', legend=None),  # , scale=alt.Scale(scheme='redyellowblue', reverse=True)
+        color=alt.Color(focus + ':Q', legend=None, scale=alt.Scale(scheme='yellowgreenblue')),
         tooltip=[level + ':N',
                  alt.Tooltip('population:Q', format=',.0f', title='Population'),
                  alt.Tooltip(focus + ':Q', format=',.0f'), alt.Tooltip(altfocus + ':Q', format=',.0f')],
@@ -283,7 +283,8 @@ def plot_choropleth(geo, df, level, per100k):
                                                  'population', 'latitude', 'longitude'])
     ).add_selection(
         click
-    )#.properties(
+    ).project(type='mercator')
+    #.properties(
     #     title=alt.TitleParams(text=' ', subtitle=format_date(start_dt) + ' - ' + format_date(end_dt), align='left',
     #                           anchor='start')
     # )
@@ -408,11 +409,11 @@ def plot_timeseries(df, level, metric):
     chart = alt.layer(
         line, selectors, points, rules, text
     )
-    chart.display()
+    
     return chart.configure_view(strokeWidth=0)
 
 
-def plot_trend(df, metric, color, upisbad):
+def plot_trend(df, metric, color, upisbad, height=150):
     col_cum = determine_metric(metric, True, rolling, False, interval)
     col_inc = determine_metric(metric, False, rolling, False, interval)
 
@@ -457,13 +458,14 @@ def plot_trend(df, metric, color, upisbad):
     ).properties(
         title=alt.TitleParams(text=col_inc,
                               subtitle=f'Total: {total:,.0f}',
-                              anchor='start', align='left')
-    ).configure_view(strokeWidth=0, height=100)
+                              anchor='start', align='left'),
+        height=height
+    )
 
     return chart
 
 
-def plot_trend_stacked(df, title, metric1, metric2, upisbad):
+def plot_trend_stacked(df, title, metric1, metric2, upisbad, height=150):
     col_cum1 = determine_metric(metric1, True, rolling, False, interval)
     col_inc1 = determine_metric(metric1, False, rolling, False, interval)
     col_cum2 = determine_metric(metric2, True, rolling, False, interval)
@@ -517,8 +519,9 @@ def plot_trend_stacked(df, title, metric1, metric2, upisbad):
     ).properties(
         title=alt.TitleParams(text=title,
                               subtitle=f'Total: {total2:,.0f} (Full)',
-                              anchor='start', align='left')
-    ).configure_view(strokeWidth=0, height=100)
+                              anchor='start', align='left'),
+        height=height
+    ).configure_view(strokeWidth=0)
 
     return chart
 
@@ -570,7 +573,7 @@ def plot_progressbar(df):
         emoji="{'Infection Rate': '🦠', 'Vaccination Rate': '💉'}[datum.Metric]"
     )
 
-    return (points + text).configure_view(stroke="transparent", height=100)
+    return (points + text).configure_view(stroke="transparent", discreteHeight=100)
 
 
 def format_date(x):
@@ -589,11 +592,11 @@ def img_to_bytes(img_path):
 
 
 def mobile_view():
-    with st.beta_expander(format_date(start_dt) + ' - ' + format_date(end_dt), expanded=False):
+    with st.expander(format_date(start_dt) + ' - ' + format_date(end_dt), expanded=False):
         st.text(', '.join(sorted(countries)))
 
-    with st.beta_expander('🧭 Trends - ' + interval, expanded=True):
-        t1, t2, t3 = st.beta_columns(3)
+    with st.expander('🧭 Trends - ' + interval, expanded=True):
+        t1, t2, t3 = st.columns(3)
         with t1:
             st.altair_chart(plot_trend(timeseries_summary, 'Cases', '#faca2b', True),
                             use_container_width=True)
@@ -605,29 +608,29 @@ def mobile_view():
                                                'Partial Vaccinations', 'Full Vaccinations', False),
                             use_container_width=True)
 
-    with st.beta_expander('🩺️ Cumulative Infection & Vaccination Rates', expanded=True):
+    with st.expander('🩺️ Cumulative Infection & Vaccination Rates', expanded=True):
         st.altair_chart(plot_progressbar(timeseries_summary), use_container_width=True)
 
-    with st.beta_expander('🌎️ Heatmap - ' + metric, expanded=True):
+    with st.expander('🌎️ Heatmap - ' + metric, expanded=True):
         st.altair_chart(plot_choropleth(geodata, summary, level, per100k).configure_view(strokeWidth=0),
                         use_container_width=True)
         st.altair_chart(plot_bubblechart(summary, level, per100k).configure_view(strokeWidth=0),
                         use_container_width=True)
 
-    with st.beta_expander('〽️ Time Series - ' + metric, expanded=False):
+    with st.expander('〽️ Time Series - ' + metric, expanded=False):
         st.altair_chart(plot_timeseries(timeseries, level, metric), use_container_width=True)
 
-    with st.beta_expander('💾 Data', expanded=False):
+    with st.expander('💾 Data', expanded=False):
         st.dataframe(summary.set_index(level).iloc[:, 3:-1])
         #st.dataframe(timeseries_summary)
 
 
 def desktop_view():
-    with st.beta_expander(format_date(start_dt) + ' - ' + format_date(end_dt), expanded=False):
+    with st.expander(format_date(start_dt) + ' - ' + format_date(end_dt), expanded=False):
         st.write(', '.join(sorted(countries)))
 
-    with st.beta_expander('🧭 Trends - ' + interval, expanded=True):
-        t1, t2, t3, t4 = st.beta_columns([1, 1, 1, 2])
+    with st.expander('🧭 Trends - ' + interval, expanded=True):
+        t1, t2, t3, t4 = st.columns([1, 1, 1, 2])
         with t1:
             st.altair_chart(plot_trend(timeseries_summary, 'Cases', '#faca2b', True),
                             use_container_width=True)
@@ -641,20 +644,20 @@ def desktop_view():
         with t4:
             st.altair_chart(plot_progressbar(timeseries_summary), use_container_width=True)
 
-    col_l, col_r = st.beta_columns(2)
+    col_l, col_r = st.columns(2)
 
     with col_l:
-        with st.beta_expander('🌎️ Heatmap', expanded=True):
-            st.altair_chart(plot_choropleth(geodata, summary, level, per100k).configure_view(strokeWidth=0, height=700),
+        with st.expander('🌎️ Heatmap', expanded=True):
+            st.altair_chart(plot_choropleth(geodata, summary, level, per100k).properties(height=700),
                             use_container_width=True)
             st.altair_chart(plot_bubblechart(summary, level, per100k).configure_view(strokeWidth=0),
                             use_container_width=True)
 
     with col_r:
-        with st.beta_expander('〽️ Time Series', expanded=True):
-            st.altair_chart(plot_timeseries(timeseries, level, metric).configure_view(strokeWidth=0, height=400),
+        with st.expander('〽️ Time Series', expanded=True):
+            st.altair_chart(plot_timeseries(timeseries, level, metric).properties(height=400),
                             use_container_width=True)
-        with st.beta_expander('💾 Data', expanded=True):
+        with st.expander('💾 Data', expanded=True):
             #st.dataframe(summary.set_index(level).iloc[:, 3:-1], height=343)
             st.dataframe(timeseries_summary)
 
@@ -717,10 +720,10 @@ start_dt, end_dt = st.sidebar.select_slider('Date Range', options=date_rng,
                                             value=[date_rng[date_rng.year == 2021][0], date_rng.max()],
                                             format_func=lambda x: format_date(x))
 
-country_container = st.sidebar.beta_container()
+country_container = st.sidebar.container()
 country_container.empty()
 
-button_col1, button_col2, _ = st.sidebar.beta_columns([0.8, 1, 2])
+button_col1, button_col2, _ = st.sidebar.columns([0.8, 1, 2])
 europe_button = button_col1.button('EUR')
 latam_button = button_col2.button('LATAM')
 
@@ -745,7 +748,7 @@ if select_countries == []:
 else:
     countries = select_countries
 
-region_container = st.sidebar.beta_container()
+region_container = st.sidebar.container()
 region_container.empty()
 
 default_regions = sorted(df[df['Country'].isin(countries)].Region.unique())
