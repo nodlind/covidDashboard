@@ -592,7 +592,13 @@ def img_to_bytes(img_path):
 
 
 def mobile_view():
-    with st.expander(format_date(start_dt) + ' - ' + format_date(end_dt), expanded=False):
+        
+    with st.expander('🛠️ Filters - ' + format_date(start_dt) + ' - ' + format_date(end_dt), expanded=False):
+        date_rng = pd.date_range(start=df.Date.min(), end=df.Date.max(), freq=interval_cd)
+        st_dt, en_dt = st.select_slider('Date Rng', options=date_rng,
+                                            value=[date_rng[date_rng.year == 2021][0], date_rng.max()],
+                                            format_func=lambda x: format_date(x),
+                                            label_visibility='hidden')
         st.text(', '.join(sorted(countries)))
 
     with st.expander('🧭 Trends - ' + interval, expanded=True):
@@ -708,7 +714,7 @@ per100k = st.sidebar.checkbox('Per 100k', value=True, help='Show trend, heatmap 
 
 level = st.sidebar.radio('Level of Detail', options=['Country', 'Region'], help='Define level of detail in heatmap and timeseries charts')
 label = st.sidebar.checkbox('Labels', help='Add labels to heatmap')
-interval = st.sidebar.radio('Interval', options=['Daily', 'Weekly', 'Monthly'], index=1, help='Define time interval for trends and timeseries charts')
+interval = st.sidebar.radio('Interval', options=['Daily', 'Weekly', 'Monthly'], index=2, help='Define time interval for trends and timeseries charts')
 interval_cd = interval[0]
 
 st.sidebar.markdown('---')
