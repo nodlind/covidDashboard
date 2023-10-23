@@ -413,7 +413,7 @@ def plot_timeseries(df, level, metric):
     return chart.configure_view(strokeWidth=0)
 
 
-def plot_trend(df, metric, color, upisbad, height=150):
+def plot_trend(df, metric, color, upisbad, height=130):
     col_cum = determine_metric(metric, True, rolling, False, interval)
     col_inc = determine_metric(metric, False, rolling, False, interval)
 
@@ -465,7 +465,7 @@ def plot_trend(df, metric, color, upisbad, height=150):
     return chart
 
 
-def plot_trend_stacked(df, title, metric1, metric2, upisbad, height=150):
+def plot_trend_stacked(df, title, metric1, metric2, upisbad, height=130):
     col_cum1 = determine_metric(metric1, True, rolling, False, interval)
     col_inc1 = determine_metric(metric1, False, rolling, False, interval)
     col_cum2 = determine_metric(metric2, True, rolling, False, interval)
@@ -771,7 +771,8 @@ timeseries = calculate_metrics(subset, level, 'geo_temp', interval, metadata)
 summary = calculate_metrics(subset, level, 'geo', interval, metadata)
 timeseries_summary = calculate_metrics(subset, level, 'temp', interval, metadata)
 
-banner('COVID-19 Situation Dashboard')
+with st.container():
+    banner('COVID-19 Situation Dashboard')
 main(layout)
 st.markdown('---')
 st.caption(disclaimer)
